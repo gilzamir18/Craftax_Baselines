@@ -498,9 +498,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_envs",
         type=int,
-        default=1024,
+        default=512,
     )
-    parser.add_argument("--total_timesteps", type=lambda x: int(float(x)), default=1e9)
+    parser.add_argument("--total_timesteps", type=lambda x: int(float(x)), default=1e6)
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--num_steps", type=int, default=64)
     parser.add_argument("--update_epochs", type=int, default=4)
