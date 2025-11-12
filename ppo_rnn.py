@@ -203,9 +203,11 @@ def make_train(config):
         )
 
         # TRAIN LOOP
-        def _update_step(runner_state, unused):
+        def _update_step(runner_and_timestep, unused):
+            runner_state, timestep = runner_and_timestep
             # COLLECT TRAJECTORIES
-            def _env_step(runner_state, unused):
+            def _env_step(runner_and_ts, unused):
+                runner_state, ts = runner_and_ts
                 (
                     train_state,
                     env_state,
@@ -245,11 +247,11 @@ def make_train(config):
                     rng,
                     update_step,
                 )
-                return runner_state, transition
+                return (runner_state, ts + config['NUM_ENVS']), transition
 
             initial_hstate = runner_state[-3]
-            runner_state, traj_batch = jax.lax.scan(
-                _env_step, runner_state, None, config["NUM_STEPS"]
+            (runner_state, timestep), traj_batch = jax.lax.scan(
+                _env_step, (runner_state, timestep), None, config["NUM_STEPS"]
             )
 
             # CALCULATE ADVANTAGE
@@ -410,11 +412,12 @@ def make_train(config):
             rng = update_state[-1]
             if config["DEBUG"] and config["USE_WANDB"]:
 
-                def callback(metric, update_step):
+                def callback(metric, update_step, timestep):
                     to_log = create_log_dict(metric, config)
+                    to_log["timestep"] = timestep
                     batch_log(update_step, to_log, config)
 
-                jax.debug.callback(callback, metric, update_step)
+                jax.debug.callback(callback, metric, update_step, timestep)
 
             runner_state = (
                 train_state,
@@ -425,7 +428,7 @@ def make_train(config):
                 rng,
                 update_step + 1,
             )
-            return runner_state, metric
+            return (runner_state, timestep), metric
 
         rng, _rng = jax.random.split(rng)
         runner_state = (
@@ -437,9 +440,12 @@ def make_train(config):
             _rng,
             0,
         )
+        timestep = jnp.array(0) # Inicializar timestep
         runner_state, metric = jax.lax.scan(
-            _update_step, runner_state, None, config["NUM_UPDATES"]
+            _update_step, (runner_state, timestep), None, config["NUM_UPDATES"]
         )
+        timestep = runner_state[-1]  # Extrair timestep final
+        runner_state = runner_state[0] 
         return {"runner_state": runner_state, "metric": metric}
 
     return train

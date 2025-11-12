@@ -9,14 +9,9 @@ log_times = []
 
 
 def create_log_dict(info, config):
-    if "env_steps" not in batch_logs:
-        batch_logs["env_steps"] = 0
-    env_steps = batch_logs["env_steps"] + int(info["returned_episode_lengths"])
-    batch_logs["env_steps"] = env_steps
     to_log = {
         "episode_return": info["returned_episode_returns"],
         "episode_length": info["returned_episode_lengths"],
-        "env_steps": env_steps,
     }
 
     sum_achievements = 0
