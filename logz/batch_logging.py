@@ -59,6 +59,7 @@ def batch_log(update_step, log, config):
                 if key in [
                     "episode_length",
                     "episode_return",
+                    "returned_episode_default_return",
                     "exploration_bonus",
                     "e_mean",
                     "e_std",

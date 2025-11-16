@@ -241,6 +241,7 @@ def make_train(config):
                 runner_state = (
                     train_state,
                     env_state,
+
                     obsv,
                     done,
                     hstate,
@@ -504,7 +505,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_envs",
         type=int,
-        default=512,
+        default=256,
     )
     parser.add_argument("--total_timesteps", type=lambda x: int(float(x)), default=2e7)
     parser.add_argument("--lr", type=float, default=2e-4)
