@@ -154,6 +154,7 @@ class LogEnvState:
     episode_returns: float
     episode_lengths: int
     returned_episode_returns: float
+    returned_episode_default_return: float
     returned_episode_lengths: int
     timestep: int
 
@@ -167,7 +168,7 @@ class LogWrapper(GymnaxWrapper):
     @partial(jax.jit, static_argnums=(0, 2))
     def reset(self, key: chex.PRNGKey, params=None):
         obs, env_state = self._env.reset(key, params)
-        state = LogEnvState(env_state, 0.0, 0, 0.0, 0, 0)
+        state = LogEnvState(env_state, 0.0, 0, 0.0, 0.0, 0, 0)
         return obs, state
 
     @partial(jax.jit, static_argnums=(0, 4))
@@ -183,17 +184,26 @@ class LogWrapper(GymnaxWrapper):
         )
         new_episode_return = state.episode_returns + reward
         new_episode_length = state.episode_lengths + 1
+        new_episode_default_return = (
+            state.returned_episode_default_return + info.get("default_reward", 0.0)
+        )
         state = LogEnvState(
             env_state=env_state,
             episode_returns=new_episode_return * (1 - done),
             episode_lengths=new_episode_length * (1 - done),
             returned_episode_returns=state.returned_episode_returns * (1 - done)
             + new_episode_return * done,
+            returned_episode_default_return=state.returned_episode_default_return * (
+                1 - done
+            ) + new_episode_default_return * done,
             returned_episode_lengths=state.returned_episode_lengths * (1 - done)
             + new_episode_length * done,
             timestep=state.timestep + 1,
         )
         info["returned_episode_returns"] = state.returned_episode_returns
+        info["returned_episode_default_return"] = (
+            state.returned_episode_default_return
+        )
         info["returned_episode_lengths"] = state.returned_episode_lengths
         info["timestep"] = state.timestep
         info["returned_episode"] = done
